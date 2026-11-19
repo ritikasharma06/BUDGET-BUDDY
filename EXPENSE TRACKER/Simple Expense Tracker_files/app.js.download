@@ -1,0 +1,666 @@
+// ===== DEFAULT SCHEMA =====
+const defaultCategories = [
+    { name: 'Food', color: '#F59E0B' }, { name: 'Transport', color: '#3B82F6' },
+    { name: 'Shopping', color: '#EC4899' }, { name: 'Bills', color: '#EF4444' },
+    { name: 'Entertainment', color: '#8B5CF6' }, { name: 'Other', color: '#10B981' }
+];
+
+const defaultSettings = {
+    theme: 'dark',
+    budgets: { day: 0, week: 0, month: 0 },
+    budgetType: 'month',
+    currency: '₹',
+    name: 'User'
+};
+
+// ===== DATABASE MANAGEMENT =====
+// The master DB storing all users
+let localDb = JSON.parse(localStorage.getItem('set_db_v2')) || { users: {} };
+let activeUser = localStorage.getItem('set_active_user') || null;
+
+// The active state mounted on login
+let State = { expenses: [], categories: [], settings: {}, sort: { key: 'date', order: 'desc' } };
+let charts = { dashBar: null, dashPie: null, repLine: null, repBar: null, repPie: null };
+
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', () => {
+    if (activeUser && localDb.users[activeUser]) {
+        mountUser(activeUser);
+        showApp();
+    } else {
+        showLogin();
+    }
+    setupEventListeners();
+});
+
+function mountUser(username) {
+    activeUser = username;
+    localStorage.setItem('set_active_user', username);
+    const userData = localDb.users[username];
+    State.expenses = userData.expenses || [];
+    State.categories = userData.categories || [...defaultCategories];
+    State.settings = userData.settings || {...defaultSettings, name: username};
+    State.sort = { key: 'date', order: 'desc' };
+    State.settings.name = State.settings.name || username;
+    State.settings.currency = State.settings.currency || defaultSettings.currency;
+
+    // Migrate legacy single monthly budget to new budget structure
+    if (typeof State.settings.budget === 'number') {
+        State.settings.budgets = { day: 0, week: 0, month: State.settings.budget };
+        delete State.settings.budget;
+    }
+    State.settings.budgets = State.settings.budgets || { day: 0, week: 0, month: 0 };
+    State.settings.budgetType = State.settings.budgetType || 'month';
+
+    applyTheme(State.settings.theme);
+}
+
+function saveState() {
+    if (activeUser) {
+        localDb.users[activeUser].expenses = State.expenses;
+        localDb.users[activeUser].categories = State.categories;
+        localDb.users[activeUser].settings = State.settings;
+        localStorage.setItem('set_db_v2', JSON.stringify(localDb));
+    }
+}
+
+// ===== NAVIGATION & SYSTEM =====
+function showLogin() {
+    document.getElementById('loginPage').classList.add('active');
+    document.getElementById('mainApp').classList.remove('active');
+    // Ensure auth form starts at login
+    setAuthMode('login');
+}
+
+function showApp() {
+    document.getElementById('loginPage').classList.remove('active');
+    document.getElementById('mainApp').classList.add('active');
+    
+    // Update generic UI to welcome active user
+    document.getElementById('profileName').value = State.settings.name;
+    document.getElementById('headerAvatar').innerText = State.settings.name.charAt(0).toUpperCase();
+
+    updateProfileUI();
+    loadCategoryDropdowns();
+    renderCategoriesList();
+    navigate('dashboardPage');
+    refreshData();
+}
+
+function navigate(pageId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    if (pageId === 'dashboardPage' || pageId === 'reportsPage') renderCharts();
+}
+
+// ===== AUTHENTICATION =====
+function setAuthMode(mode) {
+    document.getElementById('authMode').value = mode;
+    const btn = document.getElementById('authSubmitBtn');
+    const toggleA = document.getElementById('toggleAuthBtn');
+    const toggleTxt = document.getElementById('authToggleText');
+    const subT = document.getElementById('authSubtitle');
+    
+    if (mode === 'signup') {
+        btn.innerText = 'Create Account';
+        toggleTxt.innerText = 'Already have an account? ';
+        toggleA.innerText = 'Sign In';
+        subT.innerText = 'Start tracking your expenses securely.';
+    } else {
+        btn.innerText = 'Sign In';
+        toggleTxt.innerText = "Don't have an account? ";
+        toggleA.innerText = 'Sign Up';
+        subT.innerText = 'Your professional financial companion';
+    }
+}
+
+function handleAuthSubmit(e) {
+    e.preventDefault();
+    const mode = document.getElementById('authMode').value;
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value;
+    
+    if(u === '' || p === '') return showToast('Please enter both username and password.', 'error');
+    
+    if (mode === 'signup') {
+        if (localDb.users[u]) return showToast('Username already taken.', 'error');
+        
+        // Create new user block
+        localDb.users[u] = {
+            password: p,
+            expenses: [],
+            categories: [...defaultCategories],
+            settings: {...defaultSettings, name: u}
+        };
+        localStorage.setItem('set_db_v2', JSON.stringify(localDb));
+        showToast('Account created! Logging you in...', 'success');
+        mountUser(u);
+        showApp();
+    } else {
+        // Login Flow
+        if (!localDb.users[u]) return showToast('User does not exist!', 'error');
+        if (localDb.users[u].password !== p) return showToast('Incorrect password!', 'error');
+        
+        showToast(`Welcome back, ${u}`, 'success');
+        mountUser(u);
+        showApp();
+    }
+    document.getElementById('authForm').reset();
+}
+
+// ===== EVENT LISTENERS =====
+function setupEventListeners() {
+    // Auth Toggles
+    document.getElementById('toggleAuthBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        const mode = document.getElementById('authMode').value === 'login' ? 'signup' : 'login';
+        setAuthMode(mode);
+    });
+
+    document.getElementById('authForm').addEventListener('submit', handleAuthSubmit);
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        activeUser = null;
+        localStorage.removeItem('set_active_user');
+        document.getElementById('authForm').reset();
+        showLogin();
+        showToast('Logged out securely', 'success');
+    });
+
+    // Sidebar & Navigation
+    document.querySelectorAll('.nav-item[data-target]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            navigate(btn.dataset.target);
+        });
+    });
+
+    // Theme Toggle
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const newTheme = State.settings.theme === 'dark' ? 'light' : 'dark';
+        State.settings.theme = newTheme; saveState(); applyTheme(newTheme);
+    });
+
+    // Modals
+    const openAddExpense = () => {
+        document.getElementById('expenseForm').reset();
+        document.getElementById('expenseId').value = '';
+        document.getElementById('expDate').valueAsDate = new Date();
+        document.getElementById('expenseModal').classList.add('active');
+    };
+    document.getElementById('openAddExpenseBtn').addEventListener('click', openAddExpense);
+    document.getElementById('sidebarAddExpenseBtn').addEventListener('click', (e) => { e.preventDefault(); openAddExpense(); });
+
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => document.getElementById('expenseModal').classList.remove('active'));
+    });
+
+    // Forms
+    document.getElementById('expenseForm').addEventListener('submit', handleExpenseSubmit);
+    document.getElementById('budgetForm').addEventListener('submit', handleBudgetSubmit);
+
+    // Add the budget period selector if the UI does not already include one
+    const budgetForm = document.getElementById('budgetForm');
+    if (budgetForm && !document.getElementById('budgetPeriod')) {
+        const budgetInput = document.getElementById('budgetInput');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'form-group';
+        wrapper.innerHTML = `
+            <label for="budgetPeriod">Budget period</label>
+            <select id="budgetPeriod" class="form-control">
+                <option value="day">Daily</option>
+                <option value="week">Weekly</option>
+                <option value="month">Monthly</option>
+            </select>
+        `;
+        if (budgetInput && budgetInput.parentNode === budgetForm) {
+            budgetForm.insertBefore(wrapper, budgetInput);
+        } else if (budgetInput && budgetInput.parentNode) {
+            budgetInput.parentNode.insertBefore(wrapper, budgetInput);
+        } else {
+            budgetForm.insertBefore(wrapper, budgetForm.firstChild);
+        }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', handleProfileSubmit);
+    document.getElementById('categoryForm').addEventListener('submit', handleCategorySubmit);
+
+    const budgetPeriod = document.getElementById('budgetPeriod');
+    if (budgetPeriod) {
+        budgetPeriod.addEventListener('change', () => {
+            updateProfileUI();
+            updateBudgetUI();
+            calculateDashboard();
+        });
+    }
+
+    // Filters & Sorting
+    document.getElementById('globalSearch').addEventListener('input', renderTransactions);
+    document.getElementById('filterCategory').addEventListener('change', renderTransactions);
+    document.getElementById('filterDate').addEventListener('change', renderTransactions);
+    
+    document.querySelectorAll('th.sortable').forEach(th => {
+        th.addEventListener('click', () => {
+            const key = th.dataset.sort;
+            if (State.sort.key === key) {
+                State.sort.order = State.sort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                State.sort.key = key; State.sort.order = 'asc';
+            }
+            renderTransactions();
+        });
+    });
+}
+
+// ===== CATEGORY MANAGEMENT =====
+function loadCategoryDropdowns() {
+    const options = State.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    document.getElementById('expCategory').innerHTML = options;
+    document.getElementById('filterCategory').innerHTML = `<option value="All">All Categories</option>` + options;
+}
+
+function handleCategorySubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById('newCategoryName').value.trim();
+    const color = document.getElementById('newCategoryColor').value;
+    if (State.categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+        return showToast('Category already exists!', 'error');
+    }
+    State.categories.push({ name, color });
+    saveState();
+    loadCategoryDropdowns();
+    renderCategoriesList();
+    document.getElementById('categoryForm').reset();
+    showToast('Category added', 'success');
+}
+
+function deleteCategory(name) {
+    if(confirm(`Are you sure you want to delete '${name}'?`)) {
+        State.categories = State.categories.filter(c => c.name !== name);
+        saveState(); loadCategoryDropdowns(); renderCategoriesList(); showToast('Category deleted', 'success');
+    }
+}
+
+function renderCategoriesList() {
+    const list = document.getElementById('customCategoryList');
+    list.innerHTML = '';
+    State.categories.forEach(c => {
+        const li = document.createElement('li');
+        li.className = 'category-item';
+        li.innerHTML = `
+            <div><span class="cat-badge-color" style="background:${c.color}"></span> <strong>${c.name}</strong></div>
+            <button class="btn btn-icon" onclick="deleteCategory('${c.name}')" style="width:30px;height:30px"><i class="fa-solid fa-trash text-danger"></i></button>
+        `;
+        list.appendChild(li);
+    });
+}
+
+function getCategoryColor(name) {
+    const c = State.categories.find(cat => cat.name === name);
+    return c ? c.color : '#9ca3af';
+}
+
+
+// ===== DATA MANAGEMENT =====
+function refreshData() {
+    calculateDashboard();
+    renderTransactions();
+    updateBudgetUI();
+    if(document.getElementById('dashboardPage').classList.contains('active') || document.getElementById('reportsPage').classList.contains('active')) {
+         renderCharts();
+    }
+}
+
+function handleExpenseSubmit(e) {
+    e.preventDefault();
+    const id = document.getElementById('expenseId').value;
+    const title = document.getElementById('expTitle').value.trim();
+    const amount = parseFloat(document.getElementById('expAmount').value);
+    const date = document.getElementById('expDate').value;
+    const category = document.getElementById('expCategory').value;
+    const notes = document.getElementById('expNotes').value.trim();
+
+    if (!title || !date || !category || isNaN(amount) || amount <= 0) {
+        return showToast('Please provide valid expense details.', 'error');
+    }
+
+    const expense = { id: id ? id : Date.now().toString(), title, amount, date, category, notes };
+
+    if (id) {
+        const index = State.expenses.findIndex(ex => ex.id === id);
+        if (index > -1) {
+            State.expenses[index] = expense;
+            showToast('Expense updated', 'success');
+        }
+    } else {
+        State.expenses.push(expense);
+        showToast('Expense added', 'success');
+    }
+
+    saveState();
+    document.getElementById('expenseModal').classList.remove('active');
+    refreshData();
+}
+
+function deleteExpense(id) {
+    if(confirm("Are you sure you want to delete this expense?")) {
+        State.expenses = State.expenses.filter(e => e.id !== id);
+        saveState(); refreshData(); showToast('Expense deleted', 'success');
+    }
+}
+
+function editExpense(id) {
+    const expense = State.expenses.find(e => e.id === id);
+    if(expense) {
+        document.getElementById('expenseId').value = expense.id;
+        document.getElementById('expTitle').value = expense.title;
+        document.getElementById('expAmount').value = expense.amount;
+        document.getElementById('expDate').value = expense.date;
+        document.getElementById('expCategory').value = expense.category;
+        document.getElementById('expNotes').value = expense.notes || '';
+        document.getElementById('expenseModal').classList.add('active');
+    }
+}
+
+function handleBudgetSubmit(e) {
+    e.preventDefault();
+    const budgetValue = parseFloat(document.getElementById('budgetInput').value);
+    const budgetPeriod = document.getElementById('budgetPeriod')?.value || 'month';
+    if (isNaN(budgetValue) || budgetValue < 0) {
+        return showToast('Please enter a valid budget amount.', 'error');
+    }
+    State.settings.budgetType = budgetPeriod;
+    State.settings.budgets = State.settings.budgets || { day: 0, week: 0, month: 0 };
+    State.settings.budgets[budgetPeriod] = budgetValue;
+    saveState();
+    updateBudgetUI();
+    calculateDashboard();
+    showToast('Budget updated', 'success');
+}
+
+function getCurrentBudgetConfig() {
+    const budgetType = State.settings.budgetType || 'month';
+    const budgets = State.settings.budgets || { day: 0, week: 0, month: 0 };
+    return { budgetType, budgets, limit: budgets[budgetType] || 0 };
+}
+
+function getCurrentBudgetLabel() {
+    const type = State.settings.budgetType || 'month';
+    return type === 'day' ? 'Daily' : type === 'week' ? 'Weekly' : 'Monthly';
+}
+
+function getBudgetPeriodTotal() {
+    const now = new Date();
+    return State.expenses.reduce((sum, e) => {
+        const d = new Date(e.date);
+        if (State.settings.budgetType === 'day' && isSameDay(d, now)) return sum + e.amount;
+        if (State.settings.budgetType === 'week' && isSameWeek(now, d)) return sum + e.amount;
+        if (State.settings.budgetType === 'month' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) return sum + e.amount;
+        return sum;
+    }, 0);
+}
+
+function handleProfileSubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById('profileName').value.trim();
+    const currency = document.getElementById('profileCurrency').value;
+    if (!name) return showToast('Please enter a display name.', 'error');
+    State.settings.name = name;
+    State.settings.currency = currency;
+    saveState(); updateProfileUI(); refreshData(); showToast('Profile updated', 'success');
+}
+
+function updateProfileUI() {
+    const avatarChar = (State.settings.name || 'U').charAt(0).toUpperCase();
+    document.getElementById('headerAvatar').innerText = avatarChar;
+    document.getElementById('profileName').value = State.settings.name;
+    document.getElementById('profileCurrency').value = State.settings.currency;
+    const budgetPeriod = State.settings.budgetType || 'month';
+    const budgetValue = State.settings.budgets?.[budgetPeriod] || 0;
+    const budgetPeriodEl = document.getElementById('budgetPeriod');
+    if (budgetPeriodEl) budgetPeriodEl.value = budgetPeriod;
+    document.getElementById('budgetInput').value = budgetValue > 0 ? budgetValue : '';
+}
+
+// ===== DASHBOARD & INSIGHTS =====
+function formatMoney(amount) {
+    return State.settings.currency + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function isSameDay(d1, d2) { return d1.toDateString() === d2.toDateString(); }
+function isSameWeek(d1, d2) {
+    const diff = Math.abs(d1 - d2);
+    return diff <= 7 * 24 * 60 * 60 * 1000 && d1.getDay() >= d2.getDay();
+}
+
+function calculateDashboard() {
+    const now = new Date();
+    let todayTot = 0, weekTot = 0, monthTot = 0, lifeTot = 0;
+
+    State.expenses.forEach(e => {
+        const d = new Date(e.date);
+        lifeTot += e.amount;
+        if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) monthTot += e.amount;
+        if (isSameWeek(now, d)) weekTot += e.amount;
+        if (isSameDay(now, d)) todayTot += e.amount;
+    });
+
+    document.getElementById('todayTotal').innerText = formatMoney(todayTot);
+    document.getElementById('weeklyTotal').innerText = formatMoney(weekTot);
+    document.getElementById('monthlyTotal').innerText = formatMoney(monthTot);
+    document.getElementById('lifetimeTotal').innerText = formatMoney(lifeTot);
+
+    generateInsights(monthTot, weekTot);
+
+    const alertCont = document.getElementById('budgetAlertContainer');
+    alertCont.innerHTML = '';
+    const { limit } = getCurrentBudgetConfig();
+    const budgetTotal = getBudgetPeriodTotal();
+    const periodLabel = getCurrentBudgetLabel();
+    if (limit > 0) {
+        const ratio = budgetTotal / limit;
+        const overAmount = budgetTotal - limit;
+        if (ratio >= 1) {
+            alertCont.innerHTML = `<div class="budget-alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i> Alert: ${periodLabel} budget exceeded by ${formatMoney(overAmount)}!</div>`;
+        } else if (ratio >= 0.8) {
+            alertCont.innerHTML = `<div class="budget-alert alert-warning"><i class="fa-solid fa-circle-exclamation"></i> Warning: ${(ratio*100).toFixed(0)}% of your ${periodLabel.toLowerCase()} budget used.</div>`;
+        }
+    }
+}
+
+function generateInsights(monthTot, weekTot) {
+    const insightEl = document.getElementById('insightText');
+    if(State.expenses.length === 0) { insightEl.innerText = `Welcome ${activeUser}! Start adding expenses to see smart insights.`; return; }
+    
+    const now = new Date();
+    const catTotals = {};
+    State.expenses.filter(e => new Date(e.date).getMonth() === now.getMonth())
+        .forEach(e => { catTotals[e.category] = (catTotals[e.category]||0) + e.amount; });
+        
+    let topCat = '', maxObj = 0;
+    for(const [c, amt] of Object.entries(catTotals)) { if(amt > maxObj) { maxObj = amt; topCat = c; } }
+    
+    const { limit, budgetType } = getCurrentBudgetConfig();
+    if (budgetType === 'month' && limit > 0 && monthTot < limit * 0.5 && now.getDate() > 15) {
+        insightEl.innerText = "Great job! You've spent less than 50% of your monthly budget, and the month is half over.";
+    } else if (topCat) {
+        insightEl.innerText = `Insight: ${topCat} is your highest expense category this month accounting for ${formatMoney(maxObj)}.`;
+    } else {
+        insightEl.innerText = `You have spent ${formatMoney(weekTot)} so far this week.`;
+    }
+}
+
+function updateBudgetUI() {
+    const now = new Date();
+    const { limit } = getCurrentBudgetConfig();
+    const periodLabel = getCurrentBudgetLabel();
+    const periodTotal = getBudgetPeriodTotal();
+
+    document.getElementById('budgetSpentLabel').innerText = `Spent: ${formatMoney(periodTotal)}`;
+    document.getElementById('budgetTotalLabel').innerText = limit > 0 ? `Limit: ${formatMoney(limit)} (${periodLabel})` : `Limit: Not Set (${periodLabel})`;
+    const bar = document.getElementById('budgetProgressBar');
+    const text = document.getElementById('budgetStatusText');
+    if (limit <= 0) { bar.style.width='0%'; text.innerText="Set a budget to track spending."; return; }
+    let percent = (periodTotal / limit) * 100; if(percent > 100) percent = 100;
+    bar.style.width = percent + '%'; bar.className = 'progress-bar';
+    if (percent >= 100) { bar.classList.add('danger'); text.innerText = `You have exceeded your ${periodLabel.toLowerCase()} budget.`; } 
+    else if (percent >= 80) { bar.classList.add('warning'); text.innerText = `Close to ${periodLabel.toLowerCase()} budget limit.`; } 
+    else { text.innerText = `Within ${periodLabel.toLowerCase()} budget limits.`; }
+}
+
+// ===== TRANSACTIONS RENDERING =====
+function renderTransactions() {
+    const searchTerm = document.getElementById('globalSearch').value.toLowerCase();
+    const filterCat = document.getElementById('filterCategory').value;
+    const filterDte = document.getElementById('filterDate').value;
+    const list = document.getElementById('transactionList');
+    list.innerHTML = '';
+
+    let filtered = State.expenses.filter(e => {
+        return e.title.toLowerCase().includes(searchTerm) 
+            && (filterCat === 'All' || e.category === filterCat)
+            && (filterDte === '' || e.date === filterDte);
+    });
+
+    filtered.sort((a,b) => {
+        let valA, valB;
+        if (State.sort.key === 'date') { valA = new Date(a.date); valB = new Date(b.date); } 
+        else if (State.sort.key === 'amount') { valA = a.amount; valB = b.amount; }
+        else { valA = a.category.toLowerCase(); valB = b.category.toLowerCase(); }
+        
+        if(valA < valB) return State.sort.order === 'asc' ? -1 : 1;
+        if(valA > valB) return State.sort.order === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    if (filtered.length === 0) { document.getElementById('noDataMessage').style.display = 'block'; } 
+    else {
+        document.getElementById('noDataMessage').style.display = 'none';
+        filtered.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${new Date(e.date).toLocaleDateString()}</td>
+                <td><strong>${e.title}</strong></td>
+                <td><span class="badge" style="background:${getCategoryColor(e.category)};color:white">${e.category}</span></td>
+                <td class="text-muted"><small>${e.notes || '-'}</small></td>
+                <td style="font-weight:600">${formatMoney(e.amount)}</td>
+                <td>
+                    <button class="btn btn-icon" style="width:30px;height:30px" onclick="editExpense('${e.id}')"><i class="fa-solid fa-pen text-muted"></i></button>
+                    <button class="btn btn-icon" style="width:30px;height:30px" onclick="deleteExpense('${e.id}')"><i class="fa-solid fa-trash text-danger"></i></button>
+                </td>
+            `;
+            list.appendChild(tr);
+        });
+    }
+}
+
+// ===== CHARTS =====
+function renderCharts() {
+    const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#9ca3af';
+    Chart.defaults.color = textColor;
+
+    const now = new Date();
+    const currMonthExps = State.expenses.filter(e => new Date(e.date).getMonth() === now.getMonth() && new Date(e.date).getFullYear() === now.getFullYear());
+    
+    const catTotals = {};
+    currMonthExps.forEach(e => { catTotals[e.category] = (catTotals[e.category] || 0) + e.amount; });
+    const catLabels = Object.keys(catTotals);
+    const catData = Object.values(catTotals);
+    const catColors = catLabels.map(l => getCategoryColor(l));
+
+    const mthTotals = {};
+    State.expenses.forEach(e => {
+        const d = new Date(e.date); const m = d.toLocaleString('default', { month: 'short' });
+        mthTotals[m] = (mthTotals[m] || 0) + e.amount;
+    });
+
+    const dateTotals = {};
+    const sortedExps = [...State.expenses].sort((a,b) => new Date(a.date) - new Date(b.date));
+    sortedExps.forEach(e => {
+        const label = new Date(e.date).toLocaleDateString(undefined, {month:'short', day:'numeric'});
+        dateTotals[label] = (dateTotals[label] || 0) + e.amount;
+    });
+
+    if(charts.dashBar) charts.dashBar.destroy();
+    charts.dashBar = new Chart(document.getElementById('dashBarChart'), {
+        type: 'bar',
+        data: { labels: Object.keys(mthTotals), datasets: [{ label: 'Spent', data: Object.values(mthTotals), backgroundColor: '#4F46E5', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } } } }
+    });
+
+    if(charts.dashPie) charts.dashPie.destroy();
+    charts.dashPie = new Chart(document.getElementById('dashPieChart'), {
+        type: 'doughnut',
+        data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: catColors, borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+    });
+
+    if (document.getElementById('reportsPage').classList.contains('active')) {
+        if(charts.repBar) charts.repBar.destroy();
+        charts.repBar = new Chart(document.getElementById('reportBarChart'), {
+            type: 'bar', data: { labels: Object.keys(mthTotals), datasets: [{ label: 'Expenses', data: Object.values(mthTotals), backgroundColor: '#10B981', borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        if(charts.repLine) charts.repLine.destroy();
+        charts.repLine = new Chart(document.getElementById('reportLineChart'), {
+            type: 'line', data: { labels: Object.keys(dateTotals), datasets: [{ label: 'Trend', data: Object.values(dateTotals), borderColor: '#F59E0B', fill: false, tension: 0.3 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        if(charts.repPie) charts.repPie.destroy();
+        charts.repPie = new Chart(document.getElementById('reportPieChart'), {
+            type: 'pie', data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: catColors, borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+}
+
+// ===== EXPORT EXPERIENCES =====
+function exportData(type) {
+    if(State.expenses.length === 0) return showToast('No data to export', 'error');
+    
+    const exportData = [...State.expenses].sort((a,b)=> new Date(b.date) - new Date(a.date)).map(e => ({
+        Date: new Date(e.date).toLocaleDateString(),
+        Title: e.title,
+        Category: e.category,
+        Amount: e.amount,
+        Notes: e.notes || ''
+    }));
+
+    if (type === 'excel') {
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Expenses");
+        XLSX.writeFile(wb, `${activeUser}_Expense_Report.xlsx`);
+        showToast('Excel report downloaded!', 'success');
+    } else if (type === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text(`${activeUser}'s Expense Report`, 14, 15);
+        
+        const tableColumn = ["Date", "Title", "Category", "Amount", "Notes"];
+        const tableRows = exportData.map(r => [r.Date, r.Title, r.Category, State.settings.currency + r.Amount, r.Notes]);
+        
+        doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
+        doc.save(`${activeUser}_Expense_Report.pdf`);
+        showToast('PDF report downloaded!', 'success');
+    }
+}
+
+function applyTheme(theme) {
+    document.body.setAttribute('data-theme', theme);
+    document.querySelector('#themeToggle i').className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    if(charts.dashBar) renderCharts();
+}
+
+function showToast(message, type='success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<i class="fa-solid fa-${type === 'success' ? 'check-circle' : 'circle-exclamation'}"></i> ${message}`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, 3000);
+}

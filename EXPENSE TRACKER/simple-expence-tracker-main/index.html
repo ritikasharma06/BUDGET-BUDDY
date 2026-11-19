@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Buddy — Smart Personal Finance & Expense Tracker</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="app.css">
+</head>
+
+<body data-theme="dark">
+
+    <!-- ========================================== -->
+    <!-- PRESERVED LOGIN PAGE -->
+    <!-- ========================================== -->
+    <div id="loginPage" class="page active login-wrapper">
+        <div class="login-card glass-card">
+            <div class="brand">
+                <i class="fa-solid fa-wallet gradient-text"></i>
+                <h1 class="gradient-text" style="font-size:1.8rem">Budget<br>Buddy</h1>
+            </div>
+            <p id="authSubtitle">Your professional financial companion</p>
+
+            <form id="authForm" class="login-form">
+                <input type="hidden" id="authMode" value="login">
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="username" placeholder="Username" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="authSubmitBtn">Sign In</button>
+
+                <div class="mt-3" style="font-size:0.9rem;">
+                    <span class="text-muted" id="authToggleText">Don't have an account? </span>
+                    <a href="#" id="toggleAuthBtn" style="font-weight:600;">Sign Up</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MAIN FINTECH PLATFORM -->
+    <!-- ========================================== -->
+    <div id="mainApp" class="page main-layout" style="display: none;">
+
+        <!-- TOP NAVBAR -->
+        <header class="top-navbar">
+            <div class="brand">
+                <i class="fa-solid fa-wallet gradient-text"></i>
+                <div>
+                    <h2 style="font-size: 1.35rem; font-weight: 800; line-height: 1.1;" class="gradient-text">Budget Buddy</h2>
+                    <small class="text-muted" style="font-size: 0.7rem; font-weight: 600; letter-spacing: 0.5px;">ENTERPRISE EDITION</small>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <nav class="horizontal-nav">
+                    <a href="#" class="nav-item active" data-target="dashboardPage">Dashboard</a>
+                    <a href="#" class="nav-item" data-target="transactionsPage">Transactions</a>
+                    <a href="#" class="nav-item" data-target="accountsPage">Wallets</a>
+                    <a href="#" class="nav-item" data-target="budgetsPage">Budgets</a>
+                    <a href="#" class="nav-item" data-target="reportsPage">Analytics</a>
+                    <a href="#" class="nav-item text-primary" data-target="aiAssistantPage">
+                        <i class="fa-solid fa-sparkles"></i> AI Assistant
+                    </a>
+                </nav>
+
+                <div class="nav-actions">
+                    <!-- Suite Drawer Trigger -->
+                    <button id="suiteDrawerBtn" class="btn btn-secondary" title="Open Full Feature Suite" style="padding: 0.5rem 0.85rem; font-size: 0.825rem;">
+                        <i class="fa-solid fa-grid-2"></i> All Modules
+                    </button>
+
+                    <!-- Notifications Bell -->
+                    <button id="notifBellBtn" class="btn btn-icon" title="Notifications" style="position: relative;">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notif-badge" id="notifCount" style="display:none;">0</span>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button id="themeToggle" class="btn btn-icon" title="Toggle Theme">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <!-- Avatar -->
+                    <div class="user-avatar" id="headerAvatar" title="Profile Settings" style="cursor: pointer;">U</div>
+
+                    <!-- Logout -->
+                    <button id="logoutBtn" class="btn btn-icon text-danger" title="Logout" style="border:none;background:transparent;">
+                        <i class="fa-solid fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="content-area">
+
+            <!-- HEADER TOOLBAR -->
+            <div class="toolbar">
+                <div class="header-search">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="globalSearch" placeholder="Search transactions, merchants, tags...">
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" id="quickActionBtn">
+                        <i class="fa-solid fa-bolt text-warning"></i> Quick Actions
+                    </button>
+                    <button class="btn btn-secondary" id="openAddIncomeBtn">
+                        <i class="fa-solid fa-arrow-down text-success"></i> Add Income
+                    </button>
+                    <button class="btn btn-primary" id="openAddExpenseBtn">
+                        <i class="fa-solid fa-plus"></i> New Expense
+                    </button>
+                </div>
+            </div>
+
+            <!-- ALL APPLICATION VIEWS -->
+            <div class="views-container">
+
+                <!-- 1. DASHBOARD VIEW -->
+                <div id="dashboardPage" class="view active">
+                    <!-- Quick Action Shortcuts -->
+                    <div class="quick-action-bar">
+                        <button class="quick-btn" onclick="openExpenseModal('expense')"><i class="fa-solid fa-minus text-danger"></i> Expense</button>
+                        <button class="quick-btn" onclick="openExpenseModal('income')"><i class="fa-solid fa-plus text-success"></i> Income</button>
+                        <button class="quick-btn" onclick="openTransferModal()"><i class="fa-solid fa-arrow-right-arrow-left text-primary"></i> Transfer</button>
+                        <button class="quick-btn" onclick="navigate('budgetsPage')"><i class="fa-solid fa-bullseye text-warning"></i> Set Budget</button>
+                        <button class="quick-btn" onclick="openGoalModal()"><i class="fa-solid fa-flag-checkered text-success"></i> Add Goal</button>
+                        <button class="quick-btn" onclick="openSubModal()"><i class="fa-solid fa-rotate text-primary"></i> Add Sub</button>
+                        <button class="quick-btn" onclick="navigate('receiptScannerPage')"><i class="fa-solid fa-receipt text-warning"></i> Scan Receipt</button>
+                        <button class="quick-btn" onclick="navigate('aiAssistantPage')"><i class="fa-solid fa-sparkles text-primary"></i> Ask AI</button>
+                    </div>
+
+                    <!-- Timeframe Filter Pills -->
+                    <div class="timeframe-bar">
+                        <button class="time-pill active" data-period="thisMonth">This Month</button>
+                        <button class="time-pill" data-period="today">Today</button>
+                        <button class="time-pill" data-period="thisWeek">This Week</button>
+                        <button class="time-pill" data-period="lastMonth">Last Month</button>
+                        <button class="time-pill" data-period="last3Months">Last 3 Months</button>
+                        <button class="time-pill" data-period="last6Months">Last 6 Months</button>
+                        <button class="time-pill" data-period="thisYear">This Year</button>
+                        <button class="time-pill" data-period="all">All Time</button>
+                    </div>
+
+                    <!-- AI Smart Insights Banner -->
+                    <div class="smart-insights glass-card mb-4" style="cursor: pointer;" onclick="navigate('aiAssistantPage')">
+                        <i class="fa-solid fa-sparkles text-primary" style="font-size: 1.25rem;"></i>
+                        <span id="insightText">Analyzing your recent spending patterns & financial velocity...</span>
+                        <i class="fa-solid fa-arrow-right text-muted" style="margin-left: auto;"></i>
+                    </div>
+
+                    <!-- Overview Cards (8 Comprehensive FinTech Cards) -->
+                    <div class="summary-grid-8">
+                        <!-- Total Balance -->
+                        <div class="card glass-card summary-card gradient-1" onclick="navigate('accountsPage')">
+                            <div class="card-top">
+                                <span class="card-label" style="color: rgba(255,255,255,0.85);">Total Balance</span>
+                                <div class="card-icon" style="background: rgba(255,255,255,0.2); color:white;"><i class="fa-solid fa-wallet"></i></div>
+                            </div>
+                            <div class="card-value" id="cardTotalBalance">₹0.00</div>
+                            <span class="metric-chip neutral" style="color:white; background:rgba(255,255,255,0.2);" id="chipBalanceTrend">Across all accounts</span>
+                        </div>
+
+                        <!-- Available Balance -->
+                        <div class="card glass-card summary-card" onclick="navigate('accountsPage')">
+                            <div class="card-top">
+                                <span class="card-label">Available Balance</span>
+                                <div class="card-icon text-primary"><i class="fa-solid fa-money-bill-wave"></i></div>
+                            </div>
+                            <div class="card-value" id="cardAvailableBalance">₹0.00</div>
+                            <span class="metric-chip positive" id="chipAvailable">Liquid funds</span>
+                        </div>
+
+                        <!-- Total Income -->
+                        <div class="card glass-card summary-card" onclick="navigate('transactionsPage')">
+                            <div class="card-top">
+                                <span class="card-label">Total Income</span>
+                                <div class="card-icon text-success"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                            </div>
+                            <div class="card-value text-success" id="cardTotalIncome">₹0.00</div>
+                            <span class="metric-chip positive" id="chipIncomeTrend">+0% vs prev</span>
+                        </div>
+
+                        <!-- Total Expenses -->
+                        <div class="card glass-card summary-card" onclick="navigate('transactionsPage')">
+                            <div class="card-top">
+                                <span class="card-label">Total Expenses</span>
+                                <div class="card-icon text-danger"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                            </div>
+                            <div class="card-value text-danger" id="cardTotalExpenses">₹0.00</div>
+                            <span class="metric-chip negative" id="chipExpenseTrend">+0% vs prev</span>
+                        </div>
+
+                        <!-- Net Savings -->
+                        <div class="card glass-card summary-card" onclick="navigate('goalsPage')">
+                            <div class="card-top">
+                                <span class="card-label">Net Savings</span>
+                                <div class="card-icon text-primary"><i class="fa-solid fa-piggy-bank"></i></div>
+                            </div>
+                            <div class="card-value" id="cardNetSavings">₹0.00</div>
+                            <span class="metric-chip positive" id="chipSavingsRate">0% savings rate</span>
+                        </div>
+
+                        <!-- Monthly Budget -->
+                        <div class="card glass-card summary-card" onclick="navigate('budgetsPage')">
+                            <div class="card-top">
+                                <span class="card-label">Remaining Budget</span>
+                                <div class="card-icon text-warning"><i class="fa-solid fa-bullseye"></i></div>
+                            </div>
+                            <div class="card-value" id="cardRemainingBudget">₹0.00</div>
+                            <span class="metric-chip neutral" id="chipBudgetUsage">0% used</span>
+                        </div>
+
+                        <!-- Active Subscriptions -->
+                        <div class="card glass-card summary-card" onclick="navigate('subscriptionsPage')">
+                            <div class="card-top">
+                                <span class="card-label">Monthly Subscriptions</span>
+                                <div class="card-icon text-danger"><i class="fa-solid fa-rotate"></i></div>
+                            </div>
+                            <div class="card-value" id="cardSubscriptionCost">₹0.00</div>
+                            <span class="metric-chip neutral" id="chipSubCount">0 active</span>
+                        </div>
+
+                        <!-- Financial Health Score -->
+                        <div class="card glass-card summary-card" onclick="navigate('healthScorePage')">
+                            <div class="card-top">
+                                <span class="card-label">Financial Health</span>
+                                <div class="card-icon text-success"><i class="fa-solid fa-heart-pulse"></i></div>
+                            </div>
+                            <div class="card-value" id="cardHealthScore">-- / 100</div>
+                            <span class="metric-chip neutral" id="chipHealthRating">Awaiting Data</span>
+                        </div>
+                    </div>
+
+                    <!-- Budget Alerts -->
+                    <div class="budget-alert-container" id="budgetAlertContainer"></div>
+
+                    <!-- Charts Grid -->
+                    <div class="charts-grid dashboard-charts mt-4">
+                        <div class="card glass-card chart-container">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h3>Income vs Expense Dynamics</h3>
+                                <small class="text-muted">Monthly comparison</small>
+                            </div>
+                            <canvas id="dashBarChart"></canvas>
+                        </div>
+                        <div class="card glass-card chart-container">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h3>Spending Breakdown</h3>
+                                <small class="text-muted">Active timeframe</small>
+                            </div>
+                            <canvas id="dashPieChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions Widget -->
+                    <div class="card glass-card mt-4 table-container">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h3>Recent Transactions</h3>
+                            <button class="btn btn-secondary" onclick="navigate('transactionsPage')" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+                                View All <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Account</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentTransactionList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. TRANSACTIONS PAGE -->
+                <div id="transactionsPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Transaction Registry</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Manage, filter, and audit all incoming and outgoing financial transactions</p>
+                        </div>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="btn btn-secondary" onclick="openExpenseModal('income')">
+                                <i class="fa-solid fa-plus text-success"></i> Add Income
+                            </button>
+                            <button class="btn btn-primary" onclick="openExpenseModal('expense')">
+                                <i class="fa-solid fa-minus"></i> Add Expense
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card mb-4" style="padding:1rem 1.5rem;">
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:1rem;">
+                            <div>
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">TRANSACTION TYPE</label>
+                                <select id="txFilterType" class="mt-2">
+                                    <option value="All">All Types</option>
+                                    <option value="expense">Expenses Only</option>
+                                    <option value="income">Income Only</option>
+                                    <option value="transfer">Transfers Only</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">CATEGORY</label>
+                                <select id="filterCategory" class="dynamic-cat-select mt-2">
+                                    <option value="All">All Categories</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">ACCOUNT / WALLET</label>
+                                <select id="filterAccount" class="mt-2">
+                                    <option value="All">All Accounts</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">DATE FILTER</label>
+                                <input type="date" id="filterDate" class="mt-2">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">SORT BY</label>
+                                <select id="txSortOption" class="mt-2">
+                                    <option value="date-desc">Newest First</option>
+                                    <option value="date-asc">Oldest First</option>
+                                    <option value="amount-desc">Highest Amount</option>
+                                    <option value="amount-asc">Lowest Amount</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card table-container">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="date">Date <i class="fa-solid fa-sort"></i></th>
+                                    <th>Transaction</th>
+                                    <th>Category</th>
+                                    <th>Account & Payment</th>
+                                    <th>Mood & Tags</th>
+                                    <th class="sortable" data-sort="amount">Amount <i class="fa-solid fa-sort"></i></th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionList"></tbody>
+                        </table>
+                        <div id="noDataMessage" class="no-data">
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                            <p>No transactions match your search criteria.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. WALLETS & ACCOUNTS (MODULE 20) -->
+                <div id="accountsPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Wallets & Financial Accounts</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Manage balances across Cash, Bank Accounts, and Digital Wallets</p>
+                        </div>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="btn btn-secondary" onclick="openTransferModal()">
+                                <i class="fa-solid fa-arrow-right-arrow-left text-primary"></i> Internal Transfer
+                            </button>
+                            <button class="btn btn-primary" onclick="openAccountModal()">
+                                <i class="fa-solid fa-plus"></i> New Account
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="sub-cards-grid" id="accountsGrid"></div>
+
+                    <div class="card glass-card mt-4 table-container">
+                        <h3 class="mb-4">Internal Account Transfers Log</h3>
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>From Account</th>
+                                    <th>To Account</th>
+                                    <th>Amount</th>
+                                    <th>Notes</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transferHistoryList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. SMART BUDGET MANAGEMENT (MODULE 14) -->
+                <div id="budgetsPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Smart Budget Management</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Set monthly spending limits, category allocations, and real-time threshold alerts</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout">
+                        <!-- Overall Monthly Budget -->
+                        <div class="card glass-card budget-form-card">
+                            <h3><i class="fa-solid fa-bullseye text-primary"></i> Overall Monthly Budget</h3>
+                            <form id="budgetForm" class="mt-3">
+                                <div class="input-group-vertical">
+                                    <label for="budgetInput">Monthly Spending Limit (₹)</label>
+                                    <input type="number" id="budgetInput" placeholder="e.g. 25000" required>
+                                    <small class="text-muted">Multi-stage alerts trigger at 50%, 75%, 90%, and 100% of this limit.</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-2">Save Monthly Budget</button>
+                            </form>
+                            <div class="budget-progress-container mt-4">
+                                <div class="progress-labels">
+                                    <span id="budgetSpentLabel">Spent: ₹0</span>
+                                    <span id="budgetTotalLabel">Limit: ₹0</span>
+                                </div>
+                                <div class="progress-bar-wrap">
+                                    <div class="progress-bar" id="budgetProgressBar" style="width: 0%;"></div>
+                                </div>
+                                <p id="budgetStatusText" class="mt-2 text-center">No budget configured.</p>
+                            </div>
+                        </div>
+
+                        <!-- Category-Specific Budgets -->
+                        <div class="card glass-card">
+                            <h3><i class="fa-solid fa-layer-group text-warning"></i> Category Budgets</h3>
+                            <p class="text-muted" style="font-size:0.85rem;">Allocate specific spending limits per category</p>
+                            <form id="categoryBudgetForm" class="mt-3" style="display:flex; gap:0.5rem; align-items:flex-end;">
+                                <div style="flex:1;">
+                                    <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">CATEGORY</label>
+                                    <select id="catBudgetSelect" class="dynamic-cat-select mt-2"></select>
+                                </div>
+                                <div style="flex:1;">
+                                    <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">LIMIT (₹)</label>
+                                    <input type="number" id="catBudgetLimit" placeholder="e.g. 5000" class="mt-2" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Set</button>
+                            </form>
+
+                            <div class="mt-4" id="categoryBudgetsList" style="display:flex; flex-direction:column; gap:1rem;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. ANALYTICS & REPORTS (MODULE 1 & 3) -->
+                <div id="reportsPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Financial Analytics & Reporting</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Interactive trend tracking and multi-format financial statement export</p>
+                        </div>
+                        <div class="filters">
+                            <button class="btn btn-secondary" onclick="exportData('csv')">
+                                <i class="fa-solid fa-file-csv text-primary"></i> CSV
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportData('excel')">
+                                <i class="fa-solid fa-file-excel text-success"></i> Excel
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportData('pdf')">
+                                <i class="fa-solid fa-file-pdf text-danger"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid mt-4">
+                        <div class="card glass-card chart-container">
+                            <h3>Spending Velocity & Trends</h3>
+                            <canvas id="reportLineChart"></canvas>
+                        </div>
+                        <div class="card glass-card chart-container">
+                            <h3>Monthly Comparison (Income vs Outflow)</h3>
+                            <canvas id="reportBarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid mt-4">
+                        <div class="card glass-card chart-container">
+                            <h3>Category Distribution</h3>
+                            <canvas id="reportPieChart"></canvas>
+                        </div>
+                        <div class="card glass-card chart-container">
+                            <h3>Account Balance Split</h3>
+                            <canvas id="reportAccountChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. AI FINANCIAL ASSISTANT (MODULE 3.E) -->
+                <div id="aiAssistantPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2><i class="fa-solid fa-sparkles text-primary"></i> AI Financial Intelligence Assistant</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Conversational intelligence querying your actual income, expenses, and savings data</p>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="chat-bubble ai">
+                                <strong>Hello! I am your AI Financial Assistant.</strong><br>
+                                I have live access to your transactions, account balances, and budget metrics. How can I help you today?
+                            </div>
+                        </div>
+
+                        <!-- Prompt Suggestion Chips -->
+                        <div class="chat-suggestions">
+                            <button class="chat-pill" onclick="sendAiPrompt('How much did I spend this month?')">💰 How much did I spend this month?</button>
+                            <button class="chat-pill" onclick="sendAiPrompt('Where am I spending the most?')">📊 Where am I spending the most?</button>
+                            <button class="chat-pill" onclick="sendAiPrompt('Can I afford a ₹5,000 purchase?')">🛍️ Can I afford a ₹5,000 purchase?</button>
+                            <button class="chat-pill" onclick="sendAiPrompt('How much did I save this month?')">🎯 How much did I save?</button>
+                            <button class="chat-pill" onclick="sendAiPrompt('What is my biggest expense category?')">🔍 Top category analysis</button>
+                        </div>
+
+                        <form id="aiChatForm" class="chat-input-row">
+                            <input type="text" id="aiQueryInput" placeholder="Ask anything about your money, budgets, or purchases..." required style="border-radius:24px;">
+                            <button type="submit" class="btn btn-primary" style="border-radius:24px;">
+                                <i class="fa-solid fa-paper-plane"></i> Send
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 7. FINANCIAL HEALTH SCORE (MODULE 7) -->
+                <div id="healthScorePage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Financial Health Index</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">A transparent 0–100 algorithmic score evaluating your financial resilience</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout">
+                        <div class="card glass-card health-score-card">
+                            <div class="health-gauge-circle" id="healthGaugeWrap">
+                                <span class="health-score-val" id="healthGaugeValue">--</span>
+                                <span class="health-score-sub" id="healthGaugeLabel">STATUS</span>
+                            </div>
+                            <h3 id="healthVerdictTitle">Financial Health Analysis</h3>
+                            <p class="text-muted mt-2" id="healthVerdictDesc" style="font-size:0.9rem;">Log your income and expenses to compute your dynamic financial health rating.</p>
+                        </div>
+
+                        <div class="card glass-card">
+                            <h3>Health Pillars & Evaluation</h3>
+                            <div class="health-factors-grid" id="healthFactorsGrid"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. EXPENSE MOOD TRACKER (MODULE 4) -->
+                <div id="moodTrackerPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Expense Mood & Behavioral Tracking</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Discover emotional spending trends, stress purchases, and impulse triggers</p>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="card glass-card chart-container">
+                            <h3>Spending Volume by Mood</h3>
+                            <canvas id="moodBarChart"></canvas>
+                        </div>
+                        <div class="card glass-card chart-container">
+                            <h3>Impulse vs Planned Ratio</h3>
+                            <canvas id="moodImpulseChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card mt-4 table-container">
+                        <h3>Mood Correlation Insights</h3>
+                        <div id="moodInsightsText" class="mt-3 text-muted" style="line-height:1.6;"></div>
+                    </div>
+                </div>
+
+                <!-- 9. SUBSCRIPTION DETECTIVE (MODULE 5) -->
+                <div id="subscriptionsPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Subscription Detective</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Audit recurring SaaS, OTT, mobile plans, gym memberships, and renewal alerts</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openSubModal()">
+                            <i class="fa-solid fa-plus"></i> New Subscription
+                        </button>
+                    </div>
+
+                    <div class="summary-cards mb-4">
+                        <div class="card summary-card glass-card">
+                            <div class="card-icon text-primary"><i class="fa-solid fa-calendar-check"></i></div>
+                            <div class="card-info">
+                                <h3>Monthly Outflow</h3>
+                                <p id="subMonthlyTotal">₹0.00</p>
+                            </div>
+                        </div>
+                        <div class="card summary-card glass-card">
+                            <div class="card-icon text-warning"><i class="fa-solid fa-calendar-days"></i></div>
+                            <div class="card-info">
+                                <h3>Annual Projected Cost</h3>
+                                <p id="subAnnualTotal">₹0.00</p>
+                            </div>
+                        </div>
+                        <div class="card summary-card glass-card">
+                            <div class="card-icon text-success"><i class="fa-solid fa-bell"></i></div>
+                            <div class="card-info">
+                                <h3>Upcoming (7 Days)</h3>
+                                <p id="subUpcomingCount">0 Renewals</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sub-cards-grid" id="subscriptionsGrid"></div>
+                </div>
+
+                <!-- 10. FINANCIAL GOALS (MODULE 6) -->
+                <div id="goalsPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Financial Goals & Savings Journey</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Target-based savings funds with milestone achievements and visual progress</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openGoalModal()">
+                            <i class="fa-solid fa-plus"></i> Create Goal
+                        </button>
+                    </div>
+
+                    <div class="goals-grid" id="goalsGrid"></div>
+                </div>
+
+                <!-- 11. PURCHASE DECISION ASSISTANT (MODULE 8) -->
+                <div id="purchaseAssistantPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Purchase Decision Assistant</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Test-drive big purchases before buying to simulate balance, budget, and goal impact</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout">
+                        <div class="card glass-card">
+                            <h3>Simulate Purchase</h3>
+                            <form id="purchaseSimulatorForm" class="mt-3">
+                                <div class="input-group-vertical">
+                                    <label>Product or Service Name</label>
+                                    <input type="text" id="simProdName" placeholder="e.g. Sony WH-1000XM5" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="input-group-vertical">
+                                        <label>Estimated Price (₹)</label>
+                                        <input type="number" id="simProdPrice" placeholder="24990" required>
+                                    </div>
+                                    <div class="input-group-vertical">
+                                        <label>Category</label>
+                                        <select id="simProdCat" class="dynamic-cat-select"></select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="input-group-vertical">
+                                        <label>Need vs Want</label>
+                                        <select id="simNeedWant">
+                                            <option value="Need">Essential Need</option>
+                                            <option value="Want" selected>Discretionary Want</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group-vertical">
+                                        <label>Urgency</label>
+                                        <select id="simUrgency">
+                                            <option value="Immediate">Immediate (Today)</option>
+                                            <option value="Within Month">Within This Month</option>
+                                            <option value="Can Wait">Can Wait 30+ Days</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-3">Analyze Purchase Impact</button>
+                            </form>
+                        </div>
+
+                        <div class="card glass-card" id="purchaseResultCard" style="display:flex; flex-direction:column; justify-content:center;">
+                            <div class="text-center text-muted">
+                                <i class="fa-solid fa-calculator" style="font-size:3rem; margin-bottom:1rem; opacity:0.4;"></i>
+                                <p>Fill in the item details on the left to compute real-time affordability analysis.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12. WHAT-IF SIMULATOR (MODULE 9) -->
+                <div id="whatIfSimulatorPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>What-If Financial Simulator</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Simulate changes in savings, income bumps, and spending cuts</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout">
+                        <div class="card glass-card">
+                            <h3>Scenario Parameters</h3>
+                            <div class="mt-3">
+                                <label style="font-weight:600; font-size:0.85rem;">Additional Monthly Savings: <span id="valExtraSavings" class="text-primary font-bold">₹2,000</span></label>
+                                <input type="range" id="sliderExtraSavings" min="0" max="50000" step="500" value="2000" class="mt-2" style="padding:0;">
+                            </div>
+                            <div class="mt-4">
+                                <label style="font-weight:600; font-size:0.85rem;">Discretionary Spending Cut: <span id="valExpenseCut" class="text-success font-bold">15%</span></label>
+                                <input type="range" id="sliderExpenseCut" min="0" max="50" step="5" value="15" class="mt-2" style="padding:0;">
+                            </div>
+                            <div class="mt-4">
+                                <label style="font-weight:600; font-size:0.85rem;">Income Growth Expectation: <span id="valIncomeBump" class="text-primary font-bold">10%</span></label>
+                                <input type="range" id="sliderIncomeBump" min="0" max="50" step="5" value="10" class="mt-2" style="padding:0;">
+                            </div>
+                        </div>
+
+                        <div class="card glass-card" id="whatIfResultsCard">
+                            <h3>Projected Financial Impact</h3>
+                            <div class="summary-cards mt-3" style="grid-template-columns:1fr 1fr;">
+                                <div class="card summary-card glass-card">
+                                    <div class="card-info">
+                                        <h3>6-Month Projected Wealth</h3>
+                                        <p id="proj6Month" class="text-success">₹0.00</p>
+                                    </div>
+                                </div>
+                                <div class="card summary-card glass-card">
+                                    <div class="card-info">
+                                        <h3>1-Year Projected Wealth</h3>
+                                        <p id="proj1Year" class="text-primary">₹0.00</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-muted mt-3" id="whatIfExplanation" style="font-size:0.9rem; line-height:1.5;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 13. FINANCIAL CALENDAR (MODULE 10) -->
+                <div id="calendarPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Financial Calendar & Commitments</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Agenda view of upcoming salary credits, rent, EMIs, and bills</p>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3 id="calCurrentMonthTitle">Current Month</h3>
+                            <div style="display:flex; gap:0.5rem;">
+                                <span class="badge" style="background:rgba(16,185,129,0.2); color:var(--success);">Income</span>
+                                <span class="badge" style="background:rgba(239,68,68,0.2); color:var(--danger);">Expense</span>
+                                <span class="badge" style="background:rgba(245,158,11,0.2); color:var(--warning);">Subscription</span>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="calendarGridContainer"></div>
+                    </div>
+                </div>
+
+                <!-- 14. NO-SPEND CHALLENGES & GAMIFICATION (MODULE 11) -->
+                <div id="challengesPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>No-Spend Challenges & Badges</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Build sustainable financial discipline through gamified savings sprints</p>
+                        </div>
+                    </div>
+
+                    <div class="goals-grid" id="challengesGrid"></div>
+
+                    <div class="card glass-card mt-4">
+                        <h3 class="mb-4">Unlocked Achievement Badges</h3>
+                        <div id="badgesContainer" style="display:flex; gap:1.5rem; flex-wrap:wrap;"></div>
+                    </div>
+                </div>
+
+                <!-- 15. EXPENSE DNA (MODULE 12) -->
+                <div id="expenseDnaPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Expense DNA & Behavioral Personality</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Psychological spending profile synthesized from transaction frequency and categories</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout">
+                        <div class="card glass-card text-center" style="padding:2.5rem 1.5rem;">
+                            <div class="card-icon" style="width:80px; height:80px; margin:0 auto 1.5rem; font-size:2.5rem; background:rgba(79,70,229,0.15); color:var(--primary);">
+                                <i class="fa-solid fa-fingerprint"></i>
+                            </div>
+                            <h2 id="dnaArchetypeName" class="gradient-text">The Analytical Planner</h2>
+                            <p class="text-muted mt-2" id="dnaArchetypeTagline">Careful, conscious, and values forward planning.</p>
+                            <div class="mt-4" id="dnaCharacteristicsList" style="text-align:left;"></div>
+                        </div>
+
+                        <div class="card glass-card">
+                            <h3>Spending Archetype Telemetry</h3>
+                            <div id="dnaMetricsBars" class="mt-3" style="display:flex; flex-direction:column; gap:1rem;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 16. FINANCIAL WRAPPED (MODULE 13) -->
+                <div id="wrappedPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Financial Wrapped Recap</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Your personalized monthly financial recap story</p>
+                        </div>
+                    </div>
+
+                    <div class="wrapped-container">
+                        <div class="wrapped-slide" id="wrappedSlideCard">
+                            <span class="wrapped-tag">MONTHLY RECAP</span>
+                            <h1 id="wrappedMainTitle" style="font-size:2.5rem; font-weight:900; margin-bottom:1rem;">₹0.00</h1>
+                            <p id="wrappedSubText" style="font-size:1.1rem; color:var(--text-muted); max-width:400px;">Total Outflow recorded this month</p>
+                            <div style="margin-top:2rem; display:flex; gap:1rem;">
+                                <button class="btn btn-secondary" onclick="prevWrappedSlide()"><i class="fa-solid fa-arrow-left"></i> Prev</button>
+                                <button class="btn btn-primary" onclick="nextWrappedSlide()">Next <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 17. SMART RECEIPT SCANNER (MODULE 15) -->
+                <div id="receiptScannerPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Smart Receipt Scanner</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Upload or drag-and-drop receipts to extract Merchant, Amount, Date, and Category</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout">
+                        <div class="card glass-card">
+                            <div class="dropzone" id="receiptDropzone">
+                                <i class="fa-solid fa-cloud-arrow-up" style="font-size:3rem; color:var(--primary); margin-bottom:1rem;"></i>
+                                <h3>Drop receipt image here or click to browse</h3>
+                                <p class="text-muted mt-2" style="font-size:0.85rem;">Supports JPG, PNG, WebP up to 10MB</p>
+                                <input type="file" id="receiptFileInput" accept="image/*" style="display:none;">
+                            </div>
+                        </div>
+
+                        <div class="card glass-card" id="receiptReviewCard">
+                            <h3>Extracted Receipt Information</h3>
+                            <form id="receiptConfirmForm" class="mt-3">
+                                <div class="input-group-vertical">
+                                    <label>Merchant / Vendor</label>
+                                    <input type="text" id="recMerchant" placeholder="Merchant name" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="input-group-vertical">
+                                        <label>Total Amount (₹)</label>
+                                        <input type="number" id="recAmount" step="0.01" required>
+                                    </div>
+                                    <div class="input-group-vertical">
+                                        <label>Date</label>
+                                        <input type="date" id="recDate" required>
+                                    </div>
+                                </div>
+                                <div class="input-group-vertical">
+                                    <label>Category</label>
+                                    <select id="recCategory" class="dynamic-cat-select" required></select>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-2">Save Verified Expense</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 18. SHARED EXPENSES & GROUPS (MODULE 16) -->
+                <div id="sharedExpensesPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Shared Expenses & Group Splits</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Split costs for roommates, trips, and dinners with minimum-cash-flow settlements</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openGroupModal()">
+                            <i class="fa-solid fa-plus"></i> Create Group
+                        </button>
+                    </div>
+
+                    <div class="sub-cards-grid" id="groupsGrid"></div>
+
+                    <div class="card glass-card mt-4" id="groupDetailSection" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3 id="activeGroupName">Group Name</h3>
+                            <button class="btn btn-primary" onclick="openGroupExpenseModal()"><i class="fa-solid fa-plus"></i> Add Group Expense</button>
+                        </div>
+                        <div class="profile-layout mt-4">
+                            <div>
+                                <h4>Settlement Matrix ("Who owes whom")</h4>
+                                <ul class="category-list mt-3" id="groupSettlementsList"></ul>
+                            </div>
+                            <div>
+                                <h4>Recent Group Expenses</h4>
+                                <ul class="category-list mt-3" id="groupExpensesList"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 19. EMERGENCY FINANCIAL MODE (MODULE 17) -->
+                <div id="emergencyModePage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Emergency Financial Resilience Mode</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Simulate financial runway, freeze non-essentials, and calculate emergency coverage</p>
+                        </div>
+                    </div>
+
+                    <div class="summary-cards">
+                        <div class="card summary-card glass-card">
+                            <div class="card-icon text-success"><i class="fa-solid fa-shield-halved"></i></div>
+                            <div class="card-info">
+                                <h3>Estimated Runway</h3>
+                                <p id="emRunwayDays">0 Days</p>
+                            </div>
+                        </div>
+                        <div class="card summary-card glass-card">
+                            <div class="card-icon text-danger"><i class="fa-solid fa-fire"></i></div>
+                            <div class="card-info">
+                                <h3>Daily Essential Burn</h3>
+                                <p id="emDailyBurn">₹0.00 / day</p>
+                            </div>
+                        </div>
+                        <div class="card summary-card glass-card">
+                            <div class="card-icon text-warning"><i class="fa-solid fa-scissors"></i></div>
+                            <div class="card-info">
+                                <h3>Potential Non-Essential Cuts</h3>
+                                <p id="emCuttableAmount">₹0.00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout mt-4">
+                        <div class="card glass-card">
+                            <h3>Essential Outflows (Shielded)</h3>
+                            <ul class="category-list mt-3" id="emEssentialsList"></ul>
+                        </div>
+                        <div class="card glass-card">
+                            <h3>Discretionary Expenses (Freezable)</h3>
+                            <ul class="category-list mt-3" id="emDiscretionaryList"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 20. DAILY FINANCIAL CHECK-IN (MODULE 18) -->
+                <div id="dailyCheckinPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Daily Financial Check-In</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">30-second daily audit: review today's purchases, mood, and daily budget</p>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card" style="max-width:600px; margin:0 auto; padding:2rem;">
+                        <h3 class="text-center">How was your spending today?</h3>
+                        <div class="summary-cards mt-4" style="grid-template-columns:1fr 1fr;">
+                            <div class="card summary-card glass-card">
+                                <div class="card-info">
+                                    <h3>Spent Today</h3>
+                                    <p id="checkinTodaySpent">₹0.00</p>
+                                </div>
+                            </div>
+                            <div class="card summary-card glass-card">
+                                <div class="card-info">
+                                    <h3>Daily Budget Remaining</h3>
+                                    <p id="checkinDailyBudget">₹0.00</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form id="dailyCheckinForm" class="mt-4">
+                            <div class="input-group-vertical">
+                                <label>How are you feeling about your money today?</label>
+                                <select id="checkinMood">
+                                    <option value="Happy">😊 Happy & Controlled</option>
+                                    <option value="Normal">😐 Normal / Balanced</option>
+                                    <option value="Stressed">😰 Stressed / Overspent</option>
+                                    <option value="Excited">🤩 Excited</option>
+                                    <option value="Anxious">😬 Anxious</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block mt-3">Complete Today's Check-In</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 21. FINANCIAL TIMELINE (MODULE 19) -->
+                <div id="timelinePage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Budget Buddy Journey Timeline</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Your financial growth, milestones, record savings, and debt milestones</p>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card">
+                        <ul class="category-list" id="timelineList"></ul>
+                    </div>
+                </div>
+
+                <!-- 22. CATEGORIES MANAGEMENT (PRESERVED) -->
+                <div id="categoriesPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Manage Categories & Taxonomies</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Customize your income and expense categories, colors, and classifications</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout">
+                        <div class="card glass-card">
+                            <h3>Add Custom Category</h3>
+                            <form id="categoryForm" class="mt-3">
+                                <div class="input-group-vertical">
+                                    <label>Category Name</label>
+                                    <input type="text" id="newCategoryName" placeholder="e.g. Subscriptions, Crypto, Pet Care" required>
+                                </div>
+                                <div class="input-group-vertical mt-2">
+                                    <label>Color Tag</label>
+                                    <input type="color" id="newCategoryColor" value="#4F46E5" style="height:40px; padding:2px; cursor:pointer;">
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-3"><i class="fa-solid fa-plus"></i> Add Category</button>
+                            </form>
+                        </div>
+                        <div class="card glass-card">
+                            <h3>Your Categories</h3>
+                            <ul class="category-list mt-3" id="customCategoryList"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 23. SETTINGS & PROFILE (ENHANCED) -->
+                <div id="settingsPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Account Settings & Data Governance</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Manage your preferences, security, data backups, and exports</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-layout">
+                        <div class="card glass-card profile-settings">
+                            <h3><i class="fa-solid fa-user-circle"></i> Profile & Regional Settings</h3>
+                            <form id="profileForm" class="mt-3">
+                                <div class="input-group-vertical">
+                                    <label>Display Name</label>
+                                    <input type="text" id="profileName" placeholder="Your Name">
+                                </div>
+                                <div class="input-group-vertical">
+                                    <label>Base Currency</label>
+                                    <select id="profileCurrency">
+                                        <option value="₹">INR (₹)</option>
+                                        <option value="$">USD ($)</option>
+                                        <option value="€">EUR (€)</option>
+                                        <option value="£">GBP (£)</option>
+                                        <option value="¥">JPY (¥)</option>
+                                        <option value="AED ">AED</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-2">Save Profile Data</button>
+                            </form>
+                        </div>
+
+                        <div class="card glass-card">
+                            <h3><i class="fa-solid fa-database"></i> Backup & Data Portability</h3>
+                            <p class="text-muted mt-2" style="font-size:0.85rem;">Export your complete financial records as an encrypted or raw JSON archive.</p>
+                            <div style="display:flex; gap:1rem; margin-top:1.5rem; flex-wrap:wrap;">
+                                <button class="btn btn-secondary" onclick="exportBackupJson()">
+                                    <i class="fa-solid fa-download"></i> Backup Data (JSON)
+                                </button>
+                                <button class="btn btn-secondary" onclick="document.getElementById('importBackupInput').click()">
+                                    <i class="fa-solid fa-upload"></i> Restore Backup
+                                </button>
+                                <input type="file" id="importBackupInput" accept=".json" style="display:none;" onchange="importBackupJson(event)">
+                            </div>
+                            <div class="mt-4 pt-4" style="border-top:1px solid var(--border-solid);">
+                                <h4 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</h4>
+                                <button class="btn btn-secondary text-danger mt-2" onclick="resetAccountData()" style="border-color:var(--danger);">
+                                    <i class="fa-solid fa-trash"></i> Reset All Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 24. NOTIFICATIONS VIEW -->
+                <div id="notificationsPage" class="view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Notifications Center</h2>
+                            <p class="text-muted" style="font-size:0.85rem;">Audit all budget alerts, upcoming subscriptions, and financial insights</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="clearAllNotifications()">Mark All as Read</button>
+                    </div>
+
+                    <div class="card glass-card">
+                        <div class="notif-list" id="notificationsList">
+                            <p class="text-muted text-center" style="padding:2rem;">No pending notifications.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SLIDE-OUT FINTECH SUITE DRAWER -->
+    <!-- ========================================== -->
+    <div class="suite-drawer-overlay" id="suiteDrawerOverlay">
+        <div class="suite-drawer">
+            <div class="drawer-header">
+                <div>
+                    <h3 style="font-weight:800;">FinTech Modules</h3>
+                    <small class="text-muted">Budget Buddy FinTech Suite</small>
+                </div>
+                <button class="btn btn-icon" id="closeDrawerBtn"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="drawer-body">
+                <div>
+                    <div class="drawer-section-title">Core Financials</div>
+                    <div class="drawer-grid">
+                        <div class="drawer-item" data-target="dashboardPage"><i class="fa-solid fa-gauge-high text-primary"></i> Dashboard</div>
+                        <div class="drawer-item" data-target="transactionsPage"><i class="fa-solid fa-list-check text-primary"></i> Transactions</div>
+                        <div class="drawer-item" data-target="accountsPage"><i class="fa-solid fa-wallet text-success"></i> Wallets & Accounts</div>
+                        <div class="drawer-item" data-target="budgetsPage"><i class="fa-solid fa-bullseye text-warning"></i> Smart Budgets</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="drawer-section-title">Financial Intelligence</div>
+                    <div class="drawer-grid">
+                        <div class="drawer-item" data-target="aiAssistantPage"><i class="fa-solid fa-sparkles text-primary"></i> AI Assistant</div>
+                        <div class="drawer-item" data-target="healthScorePage"><i class="fa-solid fa-heart-pulse text-success"></i> Health Score</div>
+                        <div class="drawer-item" data-target="reportsPage"><i class="fa-solid fa-chart-line text-warning"></i> Analytics & Trends</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="drawer-section-title">Budget Buddy Suite</div>
+                    <div class="drawer-grid">
+                        <div class="drawer-item" data-target="moodTrackerPage"><i class="fa-solid fa-face-smile text-warning"></i> Mood Tracker</div>
+                        <div class="drawer-item" data-target="subscriptionsPage"><i class="fa-solid fa-rotate text-danger"></i> Subscriptions</div>
+                        <div class="drawer-item" data-target="goalsPage"><i class="fa-solid fa-flag-checkered text-success"></i> Savings Goals</div>
+                        <div class="drawer-item" data-target="purchaseAssistantPage"><i class="fa-solid fa-cart-shopping text-primary"></i> Purchase Decision</div>
+                        <div class="drawer-item" data-target="whatIfSimulatorPage"><i class="fa-solid fa-sliders text-warning"></i> What-If Simulator</div>
+                        <div class="drawer-item" data-target="calendarPage"><i class="fa-solid fa-calendar text-primary"></i> Financial Calendar</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="drawer-section-title">Behavior & Gamification</div>
+                    <div class="drawer-grid">
+                        <div class="drawer-item" data-target="challengesPage"><i class="fa-solid fa-trophy text-warning"></i> Challenges</div>
+                        <div class="drawer-item" data-target="expenseDnaPage"><i class="fa-solid fa-dna text-primary"></i> Expense DNA</div>
+                        <div class="drawer-item" data-target="wrappedPage"><i class="fa-solid fa-gift text-success"></i> Financial Wrapped</div>
+                        <div class="drawer-item" data-target="dailyCheckinPage"><i class="fa-solid fa-check-to-slot text-warning"></i> Daily Check-in</div>
+                        <div class="drawer-item" data-target="timelinePage"><i class="fa-solid fa-timeline text-primary"></i> Financial Timeline</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="drawer-section-title">Advanced FinTech & Settings</div>
+                    <div class="drawer-grid">
+                        <div class="drawer-item" data-target="receiptScannerPage"><i class="fa-solid fa-receipt text-warning"></i> Receipt Scanner</div>
+                        <div class="drawer-item" data-target="sharedExpensesPage"><i class="fa-solid fa-users text-primary"></i> Shared Groups</div>
+                        <div class="drawer-item" data-target="emergencyModePage"><i class="fa-solid fa-shield-halved text-danger"></i> Emergency Mode</div>
+                        <div class="drawer-item" data-target="categoriesPage"><i class="fa-solid fa-tags text-success"></i> Categories</div>
+                        <div class="drawer-item" data-target="settingsPage"><i class="fa-solid fa-gear text-muted"></i> Settings & Profile</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALS -->
+    <!-- ========================================== -->
+
+    <!-- 1. ADD / EDIT TRANSACTION MODAL -->
+    <div id="expenseModal" class="modal-overlay">
+        <div class="modal glass-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="txModalTitle">Transaction Entry</h3>
+                <button class="close-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="expenseForm">
+                    <input type="hidden" id="expenseId">
+                    
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Type</label>
+                            <select id="expType">
+                                <option value="expense">Expense (-)</option>
+                                <option value="income">Income (+)</option>
+                            </select>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Amount (₹)</label>
+                            <input type="number" id="expAmount" step="0.01" min="0.01" placeholder="0.00" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group-vertical">
+                        <label>Title / Description</label>
+                        <input type="text" id="expTitle" placeholder="e.g., Domino's Pizza, Client Invoice, Salary" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Category</label>
+                            <select id="expCategory" class="dynamic-cat-select" required></select>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Subcategory (Optional)</label>
+                            <input type="text" id="expSubcategory" placeholder="e.g. Restaurant, Fuel">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Account / Wallet</label>
+                            <select id="expAccount"></select>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Payment Method</label>
+                            <select id="expPaymentMethod">
+                                <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                                <option value="Credit Card">Credit Card</option>
+                                <option value="Debit Card">Debit Card</option>
+                                <option value="Net Banking">Net Banking</option>
+                                <option value="Cash">Cash</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Date</label>
+                            <input type="date" id="expDate" required>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Merchant / Payee</label>
+                            <input type="text" id="expMerchant" placeholder="e.g. Amazon, Uber">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Mood Tracker (Optional)</label>
+                            <select id="expMood">
+                                <option value="Normal">Normal 😐</option>
+                                <option value="Happy">Happy 😊</option>
+                                <option value="Stressed">Stressed 😰</option>
+                                <option value="Excited">Excited 🤩</option>
+                                <option value="Bored">Bored 🥱</option>
+                                <option value="Anxious">Anxious 😬</option>
+                                <option value="Impulsive">Impulsive ⚡</option>
+                                <option value="Sad">Sad 😢</option>
+                            </select>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Purchase Nature</label>
+                            <select id="expPlanned">
+                                <option value="true">Planned Purchase</option>
+                                <option value="false">Unplanned / Impulse</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-group-vertical">
+                        <label>Notes / Tags</label>
+                        <textarea id="expNotes" rows="2" placeholder="Tags like #Dinner #Work or other notes..."></textarea>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="expSubmitBtn">Save Transaction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. INTERNAL TRANSFER MODAL -->
+    <div id="transferModal" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Transfer Between Accounts</h3>
+                <button class="close-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="transferForm">
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>From Account</label>
+                            <select id="transFromAccount" required></select>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>To Account</label>
+                            <select id="transToAccount" required></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Amount (₹)</label>
+                            <input type="number" id="transAmount" step="0.01" min="0.01" placeholder="1000.00" required>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Date</label>
+                            <input type="date" id="transDate" required>
+                        </div>
+                    </div>
+                    <div class="input-group-vertical">
+                        <label>Notes</label>
+                        <input type="text" id="transNotes" placeholder="ATM Withdrawal, Bank transfer, etc.">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Complete Transfer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. ADD ACCOUNT MODAL -->
+    <div id="accountModal" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Add Account / Wallet</h3>
+                <button class="close-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="accountForm">
+                    <div class="input-group-vertical">
+                        <label>Account Name</label>
+                        <input type="text" id="accName" placeholder="e.g. HDFC Salary, Cash in Hand, Paytm" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Account Type</label>
+                            <select id="accType">
+                                <option value="bank">Bank Account</option>
+                                <option value="cash">Cash Wallet</option>
+                                <option value="wallet">Digital Wallet</option>
+                                <option value="savings">Savings / Vault</option>
+                            </select>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Opening Balance (₹)</label>
+                            <input type="number" id="accOpeningBalance" step="0.01" value="0.00" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ADD / EDIT GOAL MODAL -->
+    <div id="goalModal" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Financial Goal</h3>
+                <button class="close-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="goalForm">
+                    <input type="hidden" id="goalId">
+                    <div class="input-group-vertical">
+                        <label>Goal Title</label>
+                        <input type="text" id="goalTitle" placeholder="e.g., MacBook Pro, Emergency Fund" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Target Amount (₹)</label>
+                            <input type="number" id="goalTarget" step="1" min="1" placeholder="50000" required>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Initial Saved Amount (₹)</label>
+                            <input type="number" id="goalSaved" step="1" min="0" value="0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Target Date</label>
+                            <input type="date" id="goalDate" required>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Priority</label>
+                            <select id="goalPriority">
+                                <option value="High">High Priority</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Goal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. ADD / EDIT SUBSCRIPTION MODAL -->
+    <div id="subModal" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Recurring Subscription</h3>
+                <button class="close-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="subForm">
+                    <input type="hidden" id="subId">
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Service / Subscription</label>
+                            <input type="text" id="subName" placeholder="Netflix, Spotify, Gym" required>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Provider</label>
+                            <input type="text" id="subProvider" placeholder="e.g. Netflix Inc.">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Billing Amount (₹)</label>
+                            <input type="number" id="subAmount" step="0.01" min="1" placeholder="649" required>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Billing Cycle</label>
+                            <select id="subCycle">
+                                <option value="Monthly">Monthly</option>
+                                <option value="Quarterly">Quarterly</option>
+                                <option value="Yearly">Yearly</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Next Billing Date</label>
+                            <input type="date" id="subNextDate" required>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Status</label>
+                            <select id="subStatus">
+                                <option value="active">Active</option>
+                                <option value="paused">Paused</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Subscription</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. SHARED GROUP MODAL -->
+    <div id="groupModal" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Create Shared Expense Group</h3>
+                <button class="close-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="groupForm">
+                    <div class="input-group-vertical">
+                        <label>Group Name</label>
+                        <input type="text" id="grpName" placeholder="Goa Trip 2026, Flat 402 Roommates" required>
+                    </div>
+                    <div class="input-group-vertical">
+                        <label>Member Names (Comma separated)</label>
+                        <input type="text" id="grpMembers" placeholder="Rahul, Priya, Amit, Me" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Group</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. SHARED GROUP EXPENSE MODAL -->
+    <div id="groupExpenseModal" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Add Group Expense</h3>
+                <button class="close-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="grpExpenseForm">
+                    <div class="input-group-vertical">
+                        <label>Expense Description</label>
+                        <input type="text" id="grpExpTitle" placeholder="Resort stay, Dinner bill" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group-vertical">
+                            <label>Total Amount (₹)</label>
+                            <input type="number" id="grpExpAmount" step="0.01" min="1" placeholder="4500" required>
+                        </div>
+                        <div class="input-group-vertical">
+                            <label>Paid By</label>
+                            <select id="grpExpPaidBy" required></select>
+                        </div>
+                    </div>
+                    <p class="text-muted" style="font-size:0.85rem;">This amount will be split equally among all group members.</p>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Split Expense</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. QUICK ACTIONS LAUNCHER MODAL -->
+    <div id="quickActionModal" class="modal-overlay">
+        <div class="modal glass-card" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>⚡ Quick Actions</h3>
+                <button class="close-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="drawer-grid">
+                    <button class="btn btn-secondary" onclick="closeAllModals(); openExpenseModal('expense');"><i class="fa-solid fa-minus text-danger"></i> Add Expense</button>
+                    <button class="btn btn-secondary" onclick="closeAllModals(); openExpenseModal('income');"><i class="fa-solid fa-plus text-success"></i> Add Income</button>
+                    <button class="btn btn-secondary" onclick="closeAllModals(); openTransferModal();"><i class="fa-solid fa-arrow-right-arrow-left text-primary"></i> Transfer Money</button>
+                    <button class="btn btn-secondary" onclick="closeAllModals(); navigate('receiptScannerPage');"><i class="fa-solid fa-receipt text-warning"></i> Scan Receipt</button>
+                    <button class="btn btn-secondary" onclick="closeAllModals(); openGoalModal();"><i class="fa-solid fa-flag-checkered text-success"></i> Add Goal</button>
+                    <button class="btn btn-secondary" onclick="closeAllModals(); openSubModal();"><i class="fa-solid fa-rotate text-danger"></i> Add Subscription</button>
+                    <button class="btn btn-secondary" onclick="closeAllModals(); navigate('aiAssistantPage');"><i class="fa-solid fa-sparkles text-primary"></i> Ask AI Assistant</button>
+                    <button class="btn btn-secondary" onclick="closeAllModals(); navigate('purchaseAssistantPage');"><i class="fa-solid fa-cart-shopping text-warning"></i> Purchase Check</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS CONTAINER -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- MAIN JAVASCRIPT APPLICATION -->
+    <script src="app.js"></script>
+</body>
+
+</html>

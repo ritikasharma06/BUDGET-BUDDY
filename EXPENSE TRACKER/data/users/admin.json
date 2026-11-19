@@ -1,0 +1,285 @@
+{
+  "password": "123456",
+  "transactions": [
+    {
+      "id": "1795103711682",
+      "type": "expense",
+      "title": "food",
+      "amount": 200,
+      "date": "2026-11-19",
+      "category": "Food & Dining",
+      "subcategory": "Restaurant",
+      "accountId": "acc-cash",
+      "toAccountId": null,
+      "paymentMethod": "UPI",
+      "merchant": "Restaurant",
+      "mood": "Normal",
+      "isPlanned": true,
+      "notes": "lunchtime",
+      "tags": []
+    }
+  ],
+  "expenses": [
+    {
+      "id": "1795103711682",
+      "type": "expense",
+      "title": "food",
+      "amount": 200,
+      "date": "2026-11-19",
+      "category": "Food & Dining",
+      "subcategory": "Restaurant",
+      "accountId": "acc-cash",
+      "toAccountId": null,
+      "paymentMethod": "UPI",
+      "merchant": "Restaurant",
+      "mood": "Normal",
+      "isPlanned": true,
+      "notes": "lunchtime",
+      "tags": []
+    }
+  ],
+  "accounts": [
+    {
+      "id": "acc-cash",
+      "name": "Cash in Hand",
+      "type": "cash",
+      "balance": 4800,
+      "icon": "fa-money-bill"
+    },
+    {
+      "id": "acc-bank",
+      "name": "Primary Bank Account",
+      "type": "bank",
+      "balance": 45000,
+      "icon": "fa-building-columns"
+    },
+    {
+      "id": "acc-wallet",
+      "name": "Digital Wallet (UPI)",
+      "type": "wallet",
+      "balance": 2500,
+      "icon": "fa-mobile-screen"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Food & Dining",
+      "color": "#F59E0B",
+      "icon": "fa-utensils",
+      "type": "expense"
+    },
+    {
+      "name": "Transportation",
+      "color": "#3B82F6",
+      "icon": "fa-car",
+      "type": "expense"
+    },
+    {
+      "name": "Shopping",
+      "color": "#EC4899",
+      "icon": "fa-bag-shopping",
+      "type": "expense"
+    },
+    {
+      "name": "Bills & Utilities",
+      "color": "#EF4444",
+      "icon": "fa-file-invoice-dollar",
+      "type": "expense"
+    },
+    {
+      "name": "Entertainment",
+      "color": "#8B5CF6",
+      "icon": "fa-film",
+      "type": "expense"
+    },
+    {
+      "name": "Health & Medical",
+      "color": "#10B981",
+      "icon": "fa-heart-pulse",
+      "type": "expense"
+    },
+    {
+      "name": "Rent & Housing",
+      "color": "#6366F1",
+      "icon": "fa-house",
+      "type": "expense"
+    },
+    {
+      "name": "Groceries",
+      "color": "#14B8A6",
+      "icon": "fa-basket-shopping",
+      "type": "expense"
+    },
+    {
+      "name": "Subscriptions",
+      "color": "#F43F5E",
+      "icon": "fa-rotate",
+      "type": "expense"
+    },
+    {
+      "name": "Education",
+      "color": "#0EA5E9",
+      "icon": "fa-graduation-cap",
+      "type": "expense"
+    },
+    {
+      "name": "Travel",
+      "color": "#EAB308",
+      "icon": "fa-plane",
+      "type": "expense"
+    },
+    {
+      "name": "Personal Care",
+      "color": "#A855F7",
+      "icon": "fa-spa",
+      "type": "expense"
+    },
+    {
+      "name": "Other",
+      "color": "#6B7280",
+      "icon": "fa-shapes",
+      "type": "expense"
+    },
+    {
+      "name": "Salary",
+      "color": "#10B981",
+      "icon": "fa-briefcase",
+      "type": "income"
+    },
+    {
+      "name": "Freelancing",
+      "color": "#3B82F6",
+      "icon": "fa-laptop-code",
+      "type": "income"
+    },
+    {
+      "name": "Investments",
+      "color": "#8B5CF6",
+      "icon": "fa-chart-line",
+      "type": "income"
+    },
+    {
+      "name": "Business",
+      "color": "#F59E0B",
+      "icon": "fa-shop",
+      "type": "income"
+    },
+    {
+      "name": "Other Income",
+      "color": "#059669",
+      "icon": "fa-money-bill-trend-up",
+      "type": "income"
+    }
+  ],
+  "settings": {
+    "theme": "light",
+    "currency": "₹",
+    "name": "admin",
+    "budget": 25000,
+    "emergencyTarget": 100000,
+    "dateFormat": "DD/MM/YYYY"
+  },
+  "budgets": {
+    "overallMonthly": 25000,
+    "categories": {
+      "Food & Dining": 8000,
+      "Shopping": 4000,
+      "Bills & Utilities": 6000
+    }
+  },
+  "subscriptions": [
+    {
+      "id": "sub-1",
+      "name": "Netflix Premium",
+      "provider": "Netflix",
+      "amount": 649,
+      "billingCycle": "Monthly",
+      "nextBillingDate": "2026-12-05",
+      "status": "active",
+      "accountId": "acc-bank"
+    },
+    {
+      "id": "sub-2",
+      "name": "Spotify Individual",
+      "provider": "Spotify",
+      "amount": 119,
+      "billingCycle": "Monthly",
+      "nextBillingDate": "2026-11-28",
+      "status": "active",
+      "accountId": "acc-bank"
+    },
+    {
+      "id": "sub-3",
+      "name": "Gym Membership",
+      "provider": "Cult.fit",
+      "amount": 1800,
+      "billingCycle": "Monthly",
+      "nextBillingDate": "2026-12-01",
+      "status": "active",
+      "accountId": "acc-bank"
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-1",
+      "title": "Emergency Fund",
+      "targetAmount": 100000,
+      "savedAmount": 45000,
+      "targetDate": "2027-01-01",
+      "priority": "High",
+      "category": "Safety"
+    },
+    {
+      "id": "goal-2",
+      "title": "MacBook Pro M3",
+      "targetAmount": 150000,
+      "savedAmount": 70000,
+      "targetDate": "2027-06-30",
+      "priority": "Medium",
+      "category": "Gadgets"
+    }
+  ],
+  "challenges": [
+    {
+      "id": "ch-1",
+      "name": "7-Day No-Spend Challenge",
+      "desc": "Avoid all discretionary spending for 7 consecutive days",
+      "targetDays": 7,
+      "currentStreak": 3,
+      "targetSavings": 3000,
+      "status": "active"
+    },
+    {
+      "id": "ch-2",
+      "name": "30-Day Savings Sprint",
+      "desc": "Save at least ₹500 every day for a full month",
+      "targetDays": 30,
+      "currentStreak": 12,
+      "targetSavings": 15000,
+      "status": "active"
+    },
+    {
+      "id": "ch-3",
+      "name": "Zero Food Delivery Week",
+      "desc": "Cook meals at home and order zero takeout food",
+      "targetDays": 7,
+      "currentStreak": 5,
+      "targetSavings": 2500,
+      "status": "active"
+    }
+  ],
+  "groups": [
+    {
+      "id": "grp-1",
+      "name": "Flat 402 Roommates",
+      "members": [
+        "Rahul",
+        "Priya",
+        "Amit",
+        "admin"
+      ],
+      "expenses": []
+    }
+  ],
+  "notifications": []
+}

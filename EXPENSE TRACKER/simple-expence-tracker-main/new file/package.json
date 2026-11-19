@@ -1,0 +1,24 @@
+{
+  "name": "budget-buddy",
+  "version": "2.0.0",
+  "description": "Budget Buddy — AI-Powered Personal Finance & Expense Intelligence Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test_suite.js && node test_auth_flow.js && node test_e2e_full.js && node audit_comprehensive.js",
+    "build": "node build.js"
+  },
+  "keywords": [
+    "budget-buddy",
+    "fintech",
+    "expense-tracker",
+    "personal-finance",
+    "ai-assistant",
+    "budget-management"
+  ],
+  "author": "Budget Buddy Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
